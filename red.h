@@ -4,6 +4,7 @@
 #include "enrutador.h"
 #include <map>
 #include <list>
+#include <string>
 
 using namespace std;
 
@@ -24,6 +25,7 @@ public:
     void eliminarEnlace(char a, char b);
     void cambiarCosto(char a, char b, int costo);
     bool existeEnrutador(char nombre) const;
+    void cargarArchivo(const string &ruta);
 
     list<char> obtenerCamino(char origen, char destino) const;
     int obtenerCosto(char origen, char destino) const;

@@ -5,6 +5,8 @@
 #include <queue>
 #include <vector>
 #include <functional>
+#include <fstream>
+#include <sstream>
 
 Red::Red()
 {
@@ -91,6 +93,61 @@ void Red::cambiarCosto(char a, char b, int costo)
 bool Red::existeEnrutador(char nombre) const
 {
     return enrutadores.count(nombre) > 0;
+}
+
+void Red::cargarArchivo(const string &ruta)
+{
+    ifstream archivo(ruta);
+    if (!archivo.is_open())
+        throw runtime_error("No se pudo abrir el archivo " + ruta);
+
+    map<char, Enrutador> nuevos;
+    string linea;
+    int numero = 0;
+
+    while (getline(archivo, linea))
+    {
+        numero++;
+        if (!linea.empty() && linea[linea.size() - 1] == '\r')
+            linea.erase(linea.size() - 1);
+
+        if (linea.empty())
+            continue;
+
+        string error = "Linea " + to_string(numero) + " invalida: " + linea;
+
+        if (linea.size() == 1)
+        {
+            if (!nuevos.emplace(linea[0], Enrutador(linea[0])).second)
+                throw runtime_error(error + " (enrutador repetido)");
+            continue;
+        }
+
+        if (linea.size() < 5 || linea[1] != '+' || linea[3] != '=')
+            throw runtime_error(error);
+
+        char a = linea[0];
+        char b = linea[2];
+        istringstream valor(linea.substr(4));
+        int costo;
+        char extra;
+
+        if (a == b || !(valor >> costo) || costo <= 0 || (valor >> extra))
+            throw runtime_error(error);
+
+        map<char, Enrutador>::iterator ea = nuevos.find(a);
+        map<char, Enrutador>::iterator eb = nuevos.find(b);
+        if (ea == nuevos.end() || eb == nuevos.end())
+            throw runtime_error(error + " (enrutador no declarado)");
+        if (ea->second.existeVecino(b))
+            throw runtime_error(error + " (enlace repetido)");
+
+        ea->second.agregarVecino(b, costo);
+        eb->second.agregarVecino(a, costo);
+    }
+
+    enrutadores.swap(nuevos);
+    actualizarTablas();
 }
 
 void Red::actualizarTablas()
